@@ -22,24 +22,24 @@ import Data.List.Unique (unique, count)
 
 main :: IO ()
 main = do
-  putStrLn "Give me a hand of 5 cards please! (We expectg good input): "
+  putStrLn "Give me a hand of 5 cards please! (We expect good input): "
   hand <- getLine
-  putStrLn $ "Your best hand is "++(parseAndFindBestCombination hand)
+  putStrLn $ "Your best hand is "++parseAndFindBestCombination hand
 
 parseAndFindBestCombination :: String -> String
 parseAndFindBestCombination = bestCombination . parseAndSortCards
 
 bestCombination :: Hand -> String
-bestCombination hand =
-  if isStraight hand && isFlush hand then "Straight Flush"
-  else if maxDuplicates hand == 4 then "Four of a Kind"
-  else if isFullHouse hand then "Full House"
-  else if isFlush hand then "Flush"
-  else if isStraight hand then "Straight"
-  else if maxDuplicates hand == 3 then "Three of a Kind"
-  else if isTwoPair hand then "Two Pair"
-  else if maxDuplicates hand == 2 then "Pair"
-  else "High Card"
+bestCombination hand
+  | isStraight hand && isFlush hand = "Straight Flush"
+  | maxDuplicates hand == 4 = "Four of a Kind"
+  | isFullHouse hand = "Full House"
+  | isFlush hand = "Flush"
+  | isStraight hand = "Straight"
+  | maxDuplicates hand == 3 = "Three of a Kind"
+  | isTwoPair hand = "Two Pair"
+  | maxDuplicates hand == 2 = "Pair"
+  | otherwise = "High Card"
 
 isTwoPair :: Hand -> Bool
 isTwoPair hand = case duplicates hand of
@@ -57,9 +57,9 @@ isFullHouse hand = case duplicates hand of
 isFlush :: Hand -> Bool
 isFlush hand = let
   suits = map suit hand
-  firstSuit = suits!!0
-  ofSameSuit = length (filter (==firstSuit) suits)
-  in if ofSameSuit == (length hand) then True else False
+  firstSuit = head suits
+  ofSameSuit = length (filter (==firstSuit) (tail suits))
+  in ofSameSuit == length hand
 
 isStraight :: Hand -> Bool
 isStraight hand = let
@@ -67,10 +67,8 @@ isStraight hand = let
   f h prev =
     case h of
       [] -> True
-      x:xs -> if x == prev + 1
-        then f xs x
-        else False
-  in f (drop 1 values) (values!!0)
+      x:xs -> (x == prev + 1) && f xs x
+  in f (tail values) (head values)
 
 data Card = Card {
   value :: Int,
@@ -78,10 +76,10 @@ data Card = Card {
 } deriving (Eq, Show)
 
 instance Ord Card where
-  a < b = (value a) < (value b)
-  a > b = (value a) > (value b)
-  a >= b = (value a) >= (value b)
-  a <= b = (value a) <= (value b)
+  a < b = value a < value b
+  a > b = value a > value b
+  a >= b = value a >= value b
+  a <= b = value a <= value b
   max a b = if a > b then a else b
   min a b = if a > b then b else a
 
@@ -89,7 +87,7 @@ type Hand = [Card]
 
 maxDuplicates :: Hand -> Int
 maxDuplicates hand = let
-  dupes = map (snd) $ duplicates hand
+  dupes = map snd $ duplicates hand
   in foldl max 0 dupes
 
 duplicates :: Hand -> [(Int, Int)]
@@ -98,8 +96,8 @@ duplicates hand = count $ map value hand
 parseCards :: String -> Hand
 parseCards hand =
   let
-    getSuit c = drop ((length c) - 1) c
-    getValue c = let s = take ((length c) - 1) c in
+    getSuit c = drop (length c - 1) c
+    getValue c = let s = take (length c - 1) c in
       case s of
          "A" -> 14
          "K" -> 13
@@ -107,11 +105,11 @@ parseCards hand =
          "J" -> 11
          _ -> read s
     parseCard c = Card (getValue c) (getSuit c)
-    unparsedCards hand = splitOn " " hand
-  in map parseCard (unparsedCards hand)
+    unparsedCards = splitOn " " hand
+  in map parseCard unparsedCards
 
 sortCards :: Hand -> Hand
-sortCards c = sortOn (\c -> (value c)) c
+sortCards = sortOn value
 
 parseAndSortCards :: String -> Hand
 parseAndSortCards = sortCards . parseCards
